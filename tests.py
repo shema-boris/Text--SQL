@@ -34,7 +34,7 @@ mask = torch.tensor([[1, 1, 1, 0, 0],
 context = attn(decoder_hidden, encoder_outputs, mask)
 print(context.shape)  # expect: (2, 8)
 
-'''
+
 from src.data.tokenizer import Vocabulary
 
 if __name__ == "__main__":
@@ -55,3 +55,44 @@ if __name__ == "__main__":
     print("Index of <pad>:", vocab.token_to_id(PAD))
     print("Index of select:", vocab.token_to_id("select"))
     print("Token for 0:", vocab.id_to_token(0))
+
+'''
+from src.data.tokenizer import Vocabulary
+from src.data.dataset import TextToSQLDataset
+
+print("\n--- Dataset test ---")
+PAD = "<pad>"
+SOS = "<sos>"
+EOS = "<eos>"
+UNK = "<unk>"
+
+src_vocab = Vocabulary([PAD, SOS, EOS, UNK])
+trg_vocab = Vocabulary([PAD, SOS, EOS, UNK])
+
+# For this quick test, build vocabs from a few toy sentences
+src_sequences = [
+    ["what", "is", "the", "average", "age", "?"],
+    ["how", "many", "employees", "are", "there", "?"],
+]
+trg_sequences = [
+    ["select", "avg", "(", "age", ")", "from", "people"],
+    ["select", "count", "(", "*", ")", "from", "employees"],
+]
+
+src_vocab.build_from_sequences(src_sequences, min_freq=1)
+trg_vocab.build_from_sequences(trg_sequences, min_freq=1)
+
+dataset = TextToSQLDataset(
+    path="data/raw/toy_train.jsonl",
+    src_vocab=src_vocab,
+    trg_vocab=trg_vocab,
+    max_src_len=16,
+    max_trg_len=16,
+)
+
+print("Dataset size:", len(dataset))
+example = dataset[0]
+print("src_ids:", example["src_ids"])
+print("trg_ids:", example["trg_ids"])
+print("src_len:", example["src_len"])
+print("trg_len:", example["trg_len"])
