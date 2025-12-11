@@ -1,4 +1,4 @@
-from src.models.encoder import Encoder
+'''from src.models.encoder import Encoder
 from src.models.attention import Attention
 import torch
 
@@ -33,3 +33,25 @@ mask = torch.tensor([[1, 1, 1, 0, 0],
 
 context = attn(decoder_hidden, encoder_outputs, mask)
 print(context.shape)  # expect: (2, 8)
+
+'''
+from src.data.tokenizer import Vocabulary
+
+if __name__ == "__main__":
+    PAD = "<pad>"
+    SOS = "<sos>"
+    EOS = "<eos>"
+    UNK = "<unk>"
+
+    vocab = Vocabulary(specials=[PAD, SOS, EOS, UNK])
+    sequences = [
+        ["select", "name", "from", "employees"],
+        ["select", "age", "from", "employees"],
+        ["what", "is", "the", "average", "age"],
+    ]
+    vocab.build_from_sequences(sequences, min_freq=1)
+
+    print("Vocab size:", vocab.size)
+    print("Index of <pad>:", vocab.token_to_id(PAD))
+    print("Index of select:", vocab.token_to_id("select"))
+    print("Token for 0:", vocab.id_to_token(0))
