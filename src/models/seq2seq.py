@@ -28,6 +28,31 @@ class Seq2Seq(nn.Module):
         self.pad_idx = pad_idx
         self.max_output_len = max_output_len
 
+    def _init_decoder_state(
+        self,
+        hidden: torch.Tensor,
+        cell: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Adapt encoder hidden state for decoder initialization.
+
+        Encoder hidden/cell shapes: (num_layers * num_directions, batch, hidden_dim).
+        For a bidirectional encoder with 1 layer this is (2, batch, hidden_dim).
+        We combine directions by summing them to obtain (num_layers, batch, hidden_dim),
+        which matches a unidirectional decoder with the same hidden_dim and num_layers.
+        """
+        num_layers = self.encoder.num_layers
+        num_directions = 2 if self.encoder.bidirectional else 1
+
+        # Reshape to (num_layers, num_directions, batch, hidden_dim)
+        hidden = hidden.view(num_layers, num_directions, hidden.size(1), hidden.size(2))
+        cell = cell.view(num_layers, num_directions, cell.size(1), cell.size(2))
+
+        # Sum over directions -> (num_layers, batch, hidden_dim)
+        hidden = hidden.sum(dim=1)
+        cell = cell.sum(dim=1)
+
+        return hidden, cell
+
     def make_src_mask(self, src: torch.Tensor) -> torch.Tensor:
         """
         src: (batch_size, src_seq_len)
@@ -55,6 +80,9 @@ class Seq2Seq(nn.Module):
         # 1) Encode source sequence
         encoder_outputs, (hidden, cell) = self.encoder(src, src_lengths)
         # encoder_outputs: (batch_size, src_seq_len, enc_hidden_dim)
+
+        # Initialize decoder hidden state from encoder state (handles bidirectional encoder)
+        hidden, cell = self._init_decoder_state(hidden, cell)
 
         # Build mask for attention
         src_mask = self.make_src_mask(src)  # (batch_size, src_seq_len)

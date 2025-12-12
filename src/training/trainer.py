@@ -186,6 +186,11 @@ def main():
         )
         print(f"Epoch {epoch}: avg loss per token = {avg_loss:.4f}")
 
+    # 5) Save trained model weights
+    checkpoint_path = "checkpoints/text2sql.pt"
+    torch.save(model.state_dict(), checkpoint_path)
+    print(f"Saved model checkpoint to {checkpoint_path}")
+
 
 if __name__ == "__main__":
     main()

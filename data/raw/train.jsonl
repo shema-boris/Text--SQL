@@ -1,0 +1,5 @@
+{"question": "What is the average age?", "sql": "SELECT AVG(age) FROM people"}
+{"question": "How many employees are there?", "sql": "SELECT COUNT(*) FROM employees"}
+{"question": "What is the maximum salary?", "sql": "SELECT MAX(salary) FROM employees"}
+{"question": "What is the minimum salary?", "sql": "SELECT MIN(salary) FROM employees"}
+{"question": "How many people are older than 30?", "sql": "SELECT COUNT(*) FROM people WHERE age > 30"}
