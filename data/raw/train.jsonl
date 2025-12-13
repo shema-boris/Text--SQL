@@ -1,5 +1,12 @@
 {"question": "What is the average age?", "sql": "SELECT AVG(age) FROM people"}
-{"question": "How many employees are there?", "sql": "SELECT COUNT(*) FROM employees"}
+{"question": "What is the average salary?", "sql": "SELECT AVG(salary) FROM employees"}
 {"question": "What is the maximum salary?", "sql": "SELECT MAX(salary) FROM employees"}
 {"question": "What is the minimum salary?", "sql": "SELECT MIN(salary) FROM employees"}
+{"question": "How many employees are there?", "sql": "SELECT COUNT(*) FROM employees"}
 {"question": "How many people are older than 30?", "sql": "SELECT COUNT(*) FROM people WHERE age > 30"}
+{"question": "How many people are younger than 18?", "sql": "SELECT COUNT(*) FROM people WHERE age < 18"}
+{"question": "How many orders are there?", "sql": "SELECT COUNT(*) FROM orders"}
+{"question": "What is the total amount of all orders?", "sql": "SELECT SUM(amount) FROM orders"}
+{"question": "What is the average grade?", "sql": "SELECT AVG(grade) FROM students"}
+{"question": "How many students passed?", "sql": "SELECT COUNT(*) FROM students WHERE grade >= 50"}
+{"question": "How many students failed?", "sql": "SELECT COUNT(*) FROM students WHERE grade < 50"}
