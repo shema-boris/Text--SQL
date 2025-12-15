@@ -137,10 +137,51 @@ def train_one_epoch(
     return total_loss / max(total_tokens, 1)
 
 
+@torch.no_grad()
+def evaluate_one_epoch(
+    model: Seq2Seq,
+    data_loader: DataLoader,
+    criterion: nn.Module,
+    device: torch.device,
+) -> float:
+    model.eval()
+    total_loss = 0.0
+    total_tokens = 0
+
+    for batch in data_loader:
+        src = batch["src_batch"].to(device)
+        trg = batch["trg_batch"].to(device)
+        src_lengths = batch["src_lengths"].to(device)
+
+        # Shift target for input and output
+        trg_input = trg[:, :-1]
+        trg_target = trg[:, 1:]
+
+        logits = model(
+            src=src,
+            src_lengths=src_lengths,
+            trg=trg_input,
+            teacher_forcing_ratio=0.0,  # no teacher forcing during evaluation
+        )
+
+        batch_size, out_len, output_dim = logits.size()
+        logits_flat = logits.reshape(batch_size * out_len, output_dim)
+        targets_flat = trg_target.reshape(batch_size * out_len)
+
+        loss = criterion(logits_flat, targets_flat)
+
+        total_loss += loss.item() * (batch_size * out_len)
+        non_pad = (targets_flat != criterion.ignore_index).sum().item()
+        total_tokens += max(non_pad, 1)
+
+    return total_loss / max(total_tokens, 1)
+
+
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     train_path = "data/raw/train.jsonl"
+    dev_path = "data/raw/wikisql_dev.jsonl"
     max_src_len = 64
     max_trg_len = 64
     batch_size = 32
@@ -169,6 +210,22 @@ def main():
         collate_fn=lambda batch: text_to_sql_collate_fn(batch, pad_idx=pad_idx),
     )
 
+    # 2b) Build dev dataset and dataloader
+    dev_dataset = TextToSQLDataset(
+        path=dev_path,
+        src_vocab=src_vocab,
+        trg_vocab=trg_vocab,
+        max_src_len=max_src_len,
+        max_trg_len=max_trg_len,
+    )
+
+    dev_loader = DataLoader(
+        dev_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=lambda batch: text_to_sql_collate_fn(batch, pad_idx=pad_idx),
+    )
+
     # 3) Build model, optimizer, loss
     model = build_model(src_vocab, trg_vocab, device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -176,7 +233,7 @@ def main():
 
     # 4) Training loop
     for epoch in range(1, num_epochs + 1):
-        avg_loss = train_one_epoch(
+        train_loss = train_one_epoch(
             model=model,
             data_loader=train_loader,
             optimizer=optimizer,
@@ -184,7 +241,15 @@ def main():
             device=device,
             teacher_forcing_ratio=teacher_forcing_ratio,
         )
-        print(f"Epoch {epoch}: avg loss per token = {avg_loss:.4f}")
+
+        dev_loss = evaluate_one_epoch(
+            model=model,
+            data_loader=dev_loader,
+            criterion=criterion,
+            device=device,
+        )
+
+        print(f"Epoch {epoch}: train_loss = {train_loss:.4f}, dev_loss = {dev_loss:.4f}")
 
     # 5) Save trained model weights
     checkpoint_path = "checkpoints/text2sql.pt"
