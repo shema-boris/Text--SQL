@@ -1,4 +1,8 @@
-
+# Core
 torch
 numpy
 
+# v2: T5-based Text-to-SQL
+transformers
+sentencepiece  # Required for T5 tokenizer
+tqdm
